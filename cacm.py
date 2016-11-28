@@ -1,7 +1,11 @@
 from collections import namedtuple
 import re
 docTuple = namedtuple('docTuple', 'id, title, summary, keywords')
-print(docTuple)
+
+def _get_line(f):
+    l = f.readline()
+    l = l.replace('\n', '')
+    return l
 
 def parse_common_words():
     ''' Returns a generator '''
@@ -12,41 +16,56 @@ def parse_common_words():
 def parse_document():
     docs = []
     with open('data/cacm.all') as f:
-        doc, id = _parse_one_doc(f)
-        while doc is not None:
+        doc, next_id = _parse_one_doc(f)
+        while next_id is not None:
+            doc, next_id = _parse_one_doc(f, next_id)
             docs.append(doc)
-            print(doc, id)
-            doc, id = _parse_one_doc(f, id)
+    return docs
 
-def is_doc_end_line(l):
+def _is_doc_end_line(l):
     return l.startswith('.I') or l == ''
 
 def _parse_one_doc(f, id=1):
-    l = f.readline()
-    l = l.replace('\n', '')
-    doc = None
-    id = None
-    title = None
-    keywords = None
-    summary = None
-    while not is_doc_end_line(l):
+    l = _get_line(f)
+    part = ''
+    keywords = ''
+    summary = ''
+    title = ''
+    while not _is_doc_end_line(l):
         if l.startswith('.T'):
+            part = 'title'
         elif l.startswith('.W'):
+            part = 'summary'
         elif l.startswith('.K'):
-        l = f.readline()
-        l = l.replace('\n', '')
+            part = 'keywords'
+        elif l.startswith('.'):
+            part = 'other'
+        else:
+            if part == 'other':
+                pass
+            elif part == 'summary':
+                summary += l
+            elif part == 'keywords':
+                keywords += l
+            elif part == 'title':
+                title += l
+            else:
+                raise ValueError('WTF is going on')
+        l = _get_line(f)
 
-    doc = docTuple('test', 'test', 'test', 123)
+    title = title.strip()
+    keywords = keywords.strip()
+    summary = summary.strip()
+    doc = docTuple(id, title, summary, keywords)
 
     if l.startswith('.I'):
-        id = re.findall(r'\d+', l)[-1]
-        print('END OF DOC', id)
+        next_id = re.findall(r'\d+', l)[-1]
+        # print('id:{} - END OF DOC - next id: {}'.format(id, next_id))
     elif l == '':
-        print('END OF FILE')
-    return (doc, id)
-
-
-parse_document()
-
+        next_id = None
+        # print('END OF FILE')
+    else:
+        raise ValueError('We should not be here')
+    return (doc, next_id)
 
 
