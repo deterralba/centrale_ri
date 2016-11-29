@@ -4,13 +4,12 @@ docTuple = namedtuple('docTuple', 'id, title, summary, keywords')
 
 def _get_line(f):
     l = f.readline()
-    l = l.replace('\n', '')
+    l = l.replace('\n', ' ')
     return l
 
 def parse_common_words():
-    ''' Returns a generator '''
     with open('data/common_words') as f:
-        common_words = (l.replace('\n', '') for l in f)
+        common_words = list(l.replace('\n', '') for l in f)
     return common_words
 
 def parse_document():
@@ -68,4 +67,33 @@ def _parse_one_doc(f, id=1):
         raise ValueError('We should not be here')
     return (doc, next_id)
 
+def tokenize(doc):
+    tokens = []
+    for field in doc:
+        tok = field.split()
+        for sp in '-,.\/[]()?!\'"+=<>*':
+            tok = [t for to in tok for t in to.split(sp)]
+        tok = [t.lower() for t in tok]
+        tok = [t for t in tok if tok != '']
+        tokens.extend([t for t in tok if t != ''])
+        # for sub in '' :
+        #    tok = [t.replace(sub, '') for t in tok]
+        # print(tok)
+    tokens = list(set(tokens))
+    return tokens
+
+def get_number_of_tokens():
+    docs = parse_document()
+    common_words = list(parse_common_words())
+    tokens = [t for doc in docs for t in tokenize(doc)]
+    print('Number of tokens (after lower/ ponctuation and basic duplicate removal): {}'.format(len(tokens)))
+    tokens = list(set(tokens))
+    print('Number of tokens (after removing duplicates): {}'.format(len(tokens)))
+    tokens = [t for t in tokens if t not in common_words]
+    print('Number of tokens (after removing {} common words): {}'.format(len(common_words), len(tokens)))
+    input('Type something to see the tokens')
+    print(tokens)
+
+if __name__ == '__main__':
+    get_number_of_tokens()
 
