@@ -1,6 +1,9 @@
+import re
+import time
+from functools import reduce
 from collections import namedtuple, defaultdict
 from nltk.stem import WordNetLemmatizer
-import re
+
 docTuple = namedtuple('docTuple', 'id, title, summary, keywords')
 wnl = WordNetLemmatizer()
 
@@ -11,7 +14,7 @@ def _get_line(f):
 
 def parse_common_words():
     with open('data/common_words') as f:
-        common_words = list(l.replace('\n', '') for l in f)
+        common_words = set(l.replace('\n', '') for l in f)
     return common_words
 
 def parse_document():
@@ -69,11 +72,17 @@ def _parse_one_doc(f, id=1):
         raise ValueError('We should not be here')
     return (doc, next_id)
 
-def tokenize(field, remove_common, lemm):
+def tokenize_string(field, remove_common, lemm):
     global wnl
+    '''
     words = field.split()
     for sp in '-,.\/[]()?!\'"+=<>*:^':
         words = [w for word in words for w in word.split(sp)]
+    '''
+    for sp in '-,.\/[]()?!\'"+=<>*:^':
+        field = field.replace(sp, ' ')
+    words = field.split()
+
     words = [w.lower() for w in words]
     words = [w for w in words if len(w) > 1]
     if remove_common:
@@ -83,8 +92,8 @@ def tokenize(field, remove_common, lemm):
     return set(words)
 
 def tokenize_doc(doc, remove_common, lemm):
-    tokens = [t for field in doc[1:] for t in tokenize(field, remove_common, lemm)]
-    return set(tokens)
+    tokens = {t for field in doc[1:] for t in tokenize_string(field, remove_common, lemm)}
+    return tokens
 
 def get_all_tokens(docs, common_words, print_res=False):
     tokens = [t for doc in docs for t in tokenize_doc(doc, remove_common=False, lemm=True)]
@@ -98,57 +107,70 @@ def get_all_tokens(docs, common_words, print_res=False):
         print(tokens)
     return tokens
 
-def index_doc(index_dict, doc):
+def add_doc_to_binary_index(index_dict, doc):
     tokens = tokenize_doc(doc, remove_common=True, lemm=True)
     for t in tokens:
         index_dict[t] |= {doc.id}
 
-def search(all_docs):
+def build_binary_index(all_docs):
+    index = defaultdict(set)
+    for doc in all_docs:
+        add_doc_to_binary_index(index, doc)
+    return index
+
+def build_vector_index(all_docs):
+    pass
+
+def search(all_docs, binary_index):
     print('Type your query (intersection is shown if several words are typed)')
     q = input('> ')
+    start_time = time.time()
     if q.startswith('!'):
-        q = q[1:]
-        q = q.strip()
-        try:
-            id = int(q)
-            print(id)
-            doc_list= [d for d in all_docs if d.id == id]
-            if not doc_list:
-                print('No doc with the given id')
-                search(all_docs)
-            doc = doc_list[0]
-            print('Document found: ', doc)
-            print('Tokens extracted:')
-            print(tokenize_doc(doc, remove_common=True, lemm=True))
-            search(all_docs)
-        except IOError:
-            print('! must be followed by a number')
-            search(all_docs)
+        reverse_search(all_docs, q[1:])
     else:
-        tokens = tokenize(q, remove_common=True, lemm=True)
-        print('Terms searched: ', *tokens)
+        tokens = tokenize_string(q, remove_common=True, lemm=True)
         if not tokens:
             print('Only common words or ponctuations were given. Try again.')
-            search(all_docs)
-        docs = []
-        for t in tokens:
-            docs.append(index_dict[t])
-        res = docs[0]
-        for doc in docs[1:]:
-            res &= doc
-        if res:
-            res = sorted(res)
-            print('Documents\'ids found (type !id to see document details):')
-            print(*res, sep=', ')
         else:
-            print('No results were found')
-        search(all_docs)
+            print('Terms searched: ', *tokens)
+            docs = [binary_index[t] for t in tokens]
+            res = reduce(lambda x, y: x&y, docs)
+            if res:
+                res = sorted(res)
+                print('{} documents found (type !id to see document details):'.format(len(res)))
+                print(*res, sep=', ')
+            else:
+                print('No results were found')
+    print('Searching took {:.2f}ms.'.format((time.time() - start_time)*1000))
+
+def reverse_search(all_docs, q):
+    try:
+        id = int(q.strip())
+        doc = next(d for d in all_docs if d.id == id)
+        print('Document found: ', doc)
+        print('Tokens extracted:\n ', tokenize_doc(doc, remove_common=True, lemm=True))
+    except StopIteration:
+        print('No doc with id ', id)
+    except (IOError, ValueError):
+        print('! must be followed by a number')
+
 
 if __name__ == '__main__':
+    start_time = time.time()
     print('Parsing cacm.all')
     all_docs = parse_document()
     print('Parsing common_words')
     common_words = parse_common_words()
+    print('Building binary index')
+    binary_index = build_binary_index(all_docs)
+    print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
+    try:
+        while True:
+            search(all_docs, binary_index)
+    except (KeyboardInterrupt, EOFError):
+        print('\nExiting')
+
+
 
     '''
     docs1 = docs[:len(docs)//2]
@@ -158,13 +180,6 @@ if __name__ == '__main__':
     '''
     # all_tokens = get_all_tokens(all_docs, common_words)
 
-    print('Building the index')
-    index_dict = defaultdict(set)
-    for doc in all_docs:
-        index_doc(index_dict, doc)
-    print('Done!')
-    # print(index_dict)
 
-    search(all_docs)
 
 
