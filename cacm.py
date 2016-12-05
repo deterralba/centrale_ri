@@ -72,22 +72,28 @@ def _parse_one_doc(f, id=1):
         raise ValueError('We should not be here')
     return (doc, next_id)
 
-def tokenize_string(field, remove_common, lemm):
-    global wnl
-    '''
-    words = field.split()
+def extract_tokens(string):
     for sp in '-,.\/[]()?!\'"+=<>*:^':
-        words = [w for word in words for w in word.split(sp)]
-    '''
-    for sp in '-,.\/[]()?!\'"+=<>*:^':
-        field = field.replace(sp, ' ')
-    words = field.split()
+        string = string.replace(sp, ' ')
+    return string.split()
 
+def tokenize_string_with_freq(field):
+    words = extract_tokens(field)
+    words = [w.lower() for w in words]
+    words = [w for w in words if len(w) > 1 and w not in common_words]
+    global wnl
+    words = [wnl.lemmatize(w) for w in words]
+    couples = {(w, words.count(w)) for w in words}
+    return couples
+
+def tokenize_string(field, remove_common, lemm):
+    words = extract_tokens(field)
     words = [w.lower() for w in words]
     words = [w for w in words if len(w) > 1]
     if remove_common:
         words = [w for w in words if w not in common_words]
     if lemm:
+        global wnl
         words = [wnl.lemmatize(w) for w in words]
     return set(words)
 
