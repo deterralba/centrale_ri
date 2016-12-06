@@ -15,13 +15,13 @@ def parse_common_words():
     return common_words
 
 def parse_document():
-    docs = []
+    docs_dict = dict()
     with open('data/cacm.all') as f:
         doc, next_id = _parse_one_doc(f)
         while next_id is not None:
             doc, next_id = _parse_one_doc(f, next_id)
-            docs.append(doc)
-    return docs
+            docs_dict[doc.id] = doc
+    return docs_dict
 
 def _is_doc_end_line(l):
     return l.startswith('.I') or l == ''

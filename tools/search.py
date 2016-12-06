@@ -5,12 +5,12 @@ from collections import defaultdict
 import tools.token as tk
 import tools.cacm as cacm
 
-def search(index_type, all_docs, common_words, binary_index, vector_index=None):
+def search(index_type, all_docs_dict, common_words, binary_index, vector_index=None):
     print('Type your query (intersection is shown if several words are typed)')
     q = input('> ')
     start_time = time.time()
     if q.startswith('#'):
-        reverse_search(all_docs, common_words, q[1:])
+        reverse_search(all_docs_dict, common_words, q[1:])
     else:
         tokens = tk.filter_tokens(tk.extract_tokens(q), common_words, remove_common=True, lemm=True)
         if not tokens:
@@ -22,17 +22,17 @@ def search(index_type, all_docs, common_words, binary_index, vector_index=None):
             elif index_type == 'vec':
                 res = vector_search(tokens, binary_index, vector_index)
             if res:
-                res = format_res(index_type, all_docs, res)
+                res = format_res(index_type, all_docs_dict, res)
                 print('{} documents found (type #id to see document details):'.format(len(res)))
                 print(*res, sep=', ')
             else:
                 print('No results were found')
     print('Searching took {:.2f}ms.'.format((time.time() - start_time)*1000))
 
-def reverse_search(all_docs, common_words, q):
+def reverse_search(all_docs_dict, common_words, q):
     try:
         id = int(q.strip())
-        doc = next(d for d in all_docs if d.id == id)
+        doc = all_docs_dict[id]
         print('Document found: ', doc)
         print('Tokens extracted:\n ', cacm.tokenize_doc(doc, common_words, remove_common=True, lemm=True))
     except StopIteration:
@@ -80,17 +80,15 @@ def vector_search(tokens, binary_index, vector_index):
     results = reduce_couples_by_token(list_of_couples_by_token)
     return results
 
-def format_res(index_type, all_docs, results):
+def get_doc_title(all_docs_dict, doc_id):
+    return all_docs_dict[doc_id].title
+
+def format_res(index_type, all_docs_dict, results):
     if index_type == 'bin':
-        for doc_id in results:
-            doc_title = next(doc.title for doc in all_docs if doc.id == doc_id)
-            descs.append((doc_id, doc_title))
-        res = ['\n{}: {}'.format(*desc) for desc in descs]
+        res = ['\nId:{}: {}'.format(res[0], res[1], get_doc_title(all_docs_dict, res[0]))
+               for res in results]
         return res
     elif index_type == 'vec':
-        descs = []
-        for doc_id, w in results:
-            doc_title = next(doc.title for doc in all_docs if doc.id == doc_id)
-            descs.append((doc_id, w, doc_title))
-        res = ['\nId:{} (score: {:0.2f}): {}'.format(*desc) for desc in descs]
+        res = ['\nId:{} (score: {:0.2f}): {}'.format(res[0], res[1], get_doc_title(all_docs_dict, res[0]))
+               for res in results]
         return res

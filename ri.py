@@ -23,9 +23,9 @@ def add_doc_to_binary_index(index_dict, doc, common_words):
     for t in cacm.tokenize_doc(doc, common_words, remove_common=True, lemm=True):
         index_dict[t] |= {doc.id}
 
-def build_binary_index(all_docs, common_words):
+def build_binary_index(all_docs_dict, common_words):
     index = defaultdict(set)
-    for doc in all_docs:
+    for doc in all_docs_dict.values():
         add_doc_to_binary_index(index, doc, common_words)
     return index
 
@@ -33,9 +33,9 @@ def add_doc_to_vector_index(index_dict, doc, common_words):
     for t, freq in cacm.tokenize_doc_with_freq(doc, common_words):
         index_dict[t] |= {(doc.id, freq)}
 
-def build_vector_index(all_docs, common_words):
+def build_vector_index(all_docs_dict, common_words):
     index = defaultdict(set)
-    for doc in all_docs:
+    for doc in all_docs_dict.values():
         add_doc_to_vector_index(index, doc, common_words)
     return index
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     print('Parsing cacm.all')
-    all_docs = cacm.parse_document()
+    all_docs_dict = cacm.parse_document()
     print('Parsing common_words')
     common_words = cacm.parse_common_words()
 
@@ -62,15 +62,15 @@ if __name__ == '__main__':
     #print(vector_index['program'])
 
     print('Building binary index')
-    binary_index = build_binary_index(all_docs, common_words)
+    binary_index = build_binary_index(all_docs_dict, common_words)
     vector_index = None
     if args.type == 'vec':
         print('Building vector index')
-        vector_index = build_vector_index(all_docs, common_words)
+        vector_index = build_vector_index(all_docs_dict, common_words)
     print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
     try:
         while True:
-            se.search(args.type, all_docs, common_words, binary_index, vector_index)
+            se.search(args.type, all_docs_dict, common_words, binary_index, vector_index)
     except (KeyboardInterrupt, EOFError):
         print('\nExiting')
 
