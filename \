@@ -51,8 +51,8 @@ if __name__ == '__main__':
     '''
 
     vector_index = build_vector_index(all_docs, common_words)
-    #print(vector_index)
-    #print(vector_index['program'])
+    print(vector_index)
+    print(vector_index['program'])
 
     binary_index = build_binary_index(all_docs, common_words)
     print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
