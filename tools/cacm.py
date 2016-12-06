@@ -70,7 +70,8 @@ def _parse_one_doc(f, id=1):
     return (doc, next_id)
 
 def tokenize_doc(doc, common_words, remove_common, lemm):
-    tokens = {t for field in doc[1:] for t in tk.tokenize_string(field, common_words, remove_common, lemm)}
+    tokens = {t for field in doc[1:]
+              for t in tk.filter_tokens(tk.extract_tokens(field), common_words, remove_common, lemm)}
     return tokens
 
 

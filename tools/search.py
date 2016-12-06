@@ -10,7 +10,7 @@ def search(all_docs, common_words, binary_index):
     if q.startswith('!'):
         reverse_search(all_docs, common_words, q[1:])
     else:
-        tokens = tk.tokenize_string(q, common_words, remove_common=True, lemm=True)
+        tokens = tk.filter_tokens(tk.extract_tokens(q), common_words, remove_common=True, lemm=True)
         if not tokens:
             print('Only common words or ponctuations were given. Try again.')
         else:

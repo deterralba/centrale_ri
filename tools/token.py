@@ -7,18 +7,16 @@ def extract_tokens(string):
         string = string.replace(sp, ' ')
     return string.split()
 
-def tokenize_string_with_freq(field, common_words):
-    words = extract_tokens(field)
-    words = [w.lower() for w in words]
+def filter_tokens_with_freq(tokens, common_words):
+    words = [w.lower() for w in tokens]
     words = [w for w in words if len(w) > 1 and w not in common_words]
     global wnl
     words = [wnl.lemmatize(w) for w in words]
     couples = {(w, words.count(w)) for w in words}
     return couples
 
-def tokenize_string(field, common_words, remove_common, lemm):
-    words = extract_tokens(field)
-    words = [w.lower() for w in words]
+def filter_tokens(tokens, common_words, remove_common, lemm):
+    words = [w.lower() for w in tokens]
     words = [w for w in words if len(w) > 1]
     if remove_common:
         words = [w for w in words if w not in common_words]
