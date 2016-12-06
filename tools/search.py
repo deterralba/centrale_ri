@@ -22,6 +22,7 @@ def search(index_type, all_docs, common_words, binary_index, vector_index=None):
             elif index_type == 'vec':
                 res = vector_search(tokens, binary_index, vector_index)
             if res:
+                res = format_res(index_type, all_docs, res)
                 print('{} documents found (type #id to see document details):'.format(len(res)))
                 print(*res, sep=', ')
             else:
@@ -65,9 +66,7 @@ def reduce_couples_by_token(couples_by_token):
     for couples_for_one_token in couples_by_token:
         for doc_id, weight in couples_for_one_token:
             res_dict[doc_id] += weight
-    res = reverse_order_dict_by_value(res_dict)
-    res_list = ['{} (score: {:0.2f})'.format(*r) for r in res]
-    return res_list
+    return reverse_order_dict_by_value(res_dict)
 
 def vector_search(tokens, binary_index, vector_index):
     relevant_ids = binary_search(tokens, binary_index)
@@ -81,3 +80,17 @@ def vector_search(tokens, binary_index, vector_index):
     results = reduce_couples_by_token(list_of_couples_by_token)
     return results
 
+def format_res(index_type, all_docs, results):
+    if index_type == 'bin':
+        for doc_id in results:
+            doc_title = next(doc.title for doc in all_docs if doc.id == doc_id)
+            descs.append((doc_id, doc_title))
+        res = ['\n{}: {}'.format(*desc) for desc in descs]
+        return res
+    elif index_type == 'vec':
+        descs = []
+        for doc_id, w in results:
+            doc_title = next(doc.title for doc in all_docs if doc.id == doc_id)
+            descs.append((doc_id, w, doc_title))
+        res = ['\nId:{} (score: {:0.2f}): {}'.format(*desc) for desc in descs]
+        return res
