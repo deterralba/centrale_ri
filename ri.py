@@ -1,4 +1,6 @@
 import time
+import argparse
+
 from collections import namedtuple, defaultdict
 
 import tools.cacm as cacm
@@ -38,27 +40,37 @@ def build_vector_index(all_docs, common_words):
     return index
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('type')
+    args = parser.parse_args()
+    if args.type not in ['bin', 'vec']:
+        raise ValueError('Invalid type {}!'.format(args.type))
+
     start_time = time.time()
     print('Parsing cacm.all')
     all_docs = cacm.parse_document()
     print('Parsing common_words')
     common_words = cacm.parse_common_words()
-    print('Building binary index')
 
     '''
     print(cacm.tokenize_doc_with_freq(all_docs[-1], common_words))
     print(cacm.tokenize_doc(all_docs[-1], common_words, True, True))
     '''
 
-    vector_index = build_vector_index(all_docs, common_words)
     #print(vector_index)
     #print(vector_index['program'])
 
+    print('Building binary index')
     binary_index = build_binary_index(all_docs, common_words)
+    vector_index = None
+    if args.type == 'vec':
+        print('Building vector index')
+        vector_index = build_vector_index(all_docs, common_words)
     print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
     try:
         while True:
-            se.search(all_docs, common_words, binary_index)
+            se.search(args.type, all_docs, common_words, binary_index, vector_index)
     except (KeyboardInterrupt, EOFError):
         print('\nExiting')
 

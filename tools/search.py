@@ -1,13 +1,15 @@
 import time
+import math
 from functools import reduce
+from collections import defaultdict
 import tools.token as tk
 import tools.cacm as cacm
 
-def search(all_docs, common_words, binary_index):
+def search(index_type, all_docs, common_words, binary_index, vector_index=None):
     print('Type your query (intersection is shown if several words are typed)')
     q = input('> ')
     start_time = time.time()
-    if q.startswith('!'):
+    if q.startswith('#'):
         reverse_search(all_docs, common_words, q[1:])
     else:
         tokens = tk.filter_tokens(tk.extract_tokens(q), common_words, remove_common=True, lemm=True)
@@ -15,11 +17,12 @@ def search(all_docs, common_words, binary_index):
             print('Only common words or ponctuations were given. Try again.')
         else:
             print('Terms searched: ', *tokens)
-            docs = [binary_index[t] for t in tokens]
-            res = reduce(lambda x, y: x&y, docs)
+            if index_type == 'bin':
+                res = binary_search(tokens, binary_index)
+            elif index_type == 'vec':
+                res = vector_search(tokens, binary_index, vector_index)
             if res:
-                res = sorted(res)
-                print('{} documents found (type !id to see document details):'.format(len(res)))
+                print('{} documents found (type #id to see document details):'.format(len(res)))
                 print(*res, sep=', ')
             else:
                 print('No results were found')
@@ -36,4 +39,45 @@ def reverse_search(all_docs, common_words, q):
     except (IOError, ValueError):
         print('! must be followed by a number')
 
+def binary_search(tokens, binary_index):
+    docs_ids = [binary_index[t] for t in tokens]
+    relevant_ids = reduce(lambda x, y: x&y, docs_ids)
+    return sorted(relevant_ids)
+
+def filter_tuple_list_with_ids(tuple_list, ids):
+    '''[(1,),(2,),(3,),(4,)], {1,2} -> [(1,),(2,)]'''
+    return list(filter(lambda x: x[0] in ids, tuple_list))
+
+def reverse_order_dict_by_value(input_dict):
+    return sorted(input_dict.items(), key=lambda x: x[1], reverse=True)
+
+def normalize_index_couples(index_items):
+    if not index_items:
+        return []
+    couples = []
+    maxi = max(couple[1] for couple in index_items)
+    for couple in index_items:
+        couples.append((couple[0], math.log(1+couple[1]/maxi)))
+    return couples
+
+def reduce_couples_by_token(couples_by_token):
+    res_dict = defaultdict(lambda: 0)
+    for couples_for_one_token in couples_by_token:
+        for doc_id, weight in couples_for_one_token:
+            res_dict[doc_id] += weight
+    res = reverse_order_dict_by_value(res_dict)
+    res_list = ['{} (score: {:0.2f})'.format(*r) for r in res]
+    return res_list
+
+def vector_search(tokens, binary_index, vector_index):
+    relevant_ids = binary_search(tokens, binary_index)
+
+    list_of_couples_by_token = []
+    for t in tokens:
+        couples_id_freq = filter_tuple_list_with_ids(vector_index[t], relevant_ids)
+        couples_id_weight = normalize_index_couples(couples_id_freq)
+        list_of_couples_by_token.append(couples_id_weight)
+
+    results = reduce_couples_by_token(list_of_couples_by_token)
+    return results
 
