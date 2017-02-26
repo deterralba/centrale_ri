@@ -6,7 +6,7 @@ import tools.search as se
 import tools.token as tk
 
 ## Parameters
-RANK_K = 5  # precision recall for the rank k
+#RANK_K = 5  # precision recall for the rank k
 
 
 ## Binary index
@@ -53,6 +53,7 @@ if __name__ == '__main__':
         import tools.cacm as collection
     elif args.source == 'cs276':
         import tools.cs as collection
+        raise NotImplementedError('The implementation is not yet complete')
 
     print('Parsing {}'.format(args.source))
     all_docs_dict = collection.parse_document()
@@ -71,35 +72,22 @@ if __name__ == '__main__':
         if args.source != 'cacm' or args.type != 'vec':
             print('Evaluation is only possible with cacm and vector index, exiting')
         else:
-            collection.evaluate(
-                args.type,
-                common_words,
-                binary_index,
-                vector_index,
-                args.plot,
-                RANK_K
-            )
+            k_values = [2, 3, 5, 10, 20]
+            for k in k_values:
+                collection.evaluate(
+                    args.type,
+                    common_words,
+                    binary_index,
+                    vector_index,
+                    show=args.plot,
+                    RANK_K=k,
+                    CALC_MAP=(k==k_values[-1])
+                )
+            input('Type <enter> to exit')
     else:  # starts the search prompt
         try:
             while True:
                 se.search(args.type, all_docs_dict, common_words, binary_index, vector_index)
         except (KeyboardInterrupt, EOFError):
             print('\nExiting')
-
-
-
-    '''
-    print(cacm.tokenize_doc_with_freq(all_docs[-1], common_words))
-    print(cacm.tokenize_doc(all_docs[-1], common_words, True, True))
-    '''
-    '''
-    docs1 = docs[:len(docs)//2]
-    docs2 = docs[len(docs)//2:]
-    tk.get_all_tokens(docs1, common_words)#, print_res=True)
-    tk.get_all_tokens(docs2, common_words)
-    '''
-    # all_tokens = tk.get_all_tokens(all_docs, common_words)
-
-
-
 

@@ -1,5 +1,7 @@
 import re
+from statistics import mean, stdev
 from collections import namedtuple, defaultdict
+
 import tools.token as tk
 
 docTuple = namedtuple('docTuple', 'id, title, summary, keywords')
@@ -103,17 +105,16 @@ def tokenize_doc_with_freq(doc, common_words):
     couples = set(tuple(couple) for couple in couples_dict.values())
     return couples
 
-def evaluate(index_type, common_words, binary_index, vector_index, show=None, RANK_K=None):
-    from statistics import mean
+def evaluate(index_type, common_words, binary_index, vector_index, show=None, RANK_K=None, CALC_MAP=None):
     from .search import vector_search
-    from .measure import get_recall, get_precision, F1_measure, calc_mean_avg_precision_at_k
+    from .measure import get_recall, get_precision, F1_measure, MAP
     relevant_docs = _parse_relevant_docs()
     results_for_query = {}
     queries = _parse_queries()
     rec_pre = []
     F1 = []
-    for query_id, truth in relevant_docs.items():
-        query = queries[query_id]
+    for query_id, query in queries.items():
+        truth = relevant_docs[query_id]
         tokens = tk.filter_tokens(
             tk.extract_tokens(query),
             common_words, remove_common=True, lemm=True
@@ -126,10 +127,11 @@ def evaluate(index_type, common_words, binary_index, vector_index, show=None, RA
         rec_pre.append((recall, precision))
         F1.append(F1_measure(recall, precision))
 
-    print('Average F1 mesure (at rank {}): {:0.2f}'.format(RANK_K, mean(F1)))
+    print('Average F1 mesure (at rank {}): {:0.3f} (std deviation: {:0.2f})'.format(RANK_K, mean(F1), stdev(F1)))
 
-    print(queries, relevant_docs, results_for_query, RANK_K)
-    calc_mean_avg_precision_at_k(queries, relevant_docs, results_for_query, k=RANK_K)
+    if CALC_MAP:
+        map_ = MAP(queries, relevant_docs, results_for_query)
+        print('MAP: {:0.3f}'.format(map_))
 
     if show:
         from .measure import show_recall_precision
