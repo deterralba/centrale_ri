@@ -108,18 +108,25 @@ def tokenize_doc_with_freq(doc, common_words):
 def evaluate(index_type, common_words, binary_index, vector_index, show=None, RANK_K=None, CALC_MAP=None):
     from .search import vector_search
     from .measure import get_recall, get_precision, F1_measure, MAP
+    from time import time
     relevant_docs = _parse_relevant_docs()
     results_for_query = {}
     queries = _parse_queries()
     rec_pre = []
     F1 = []
+    search_time = []
     for query_id, query in queries.items():
+        start_time = time()
         truth = relevant_docs[query_id]
         tokens = tk.filter_tokens(
             tk.extract_tokens(query),
             common_words, remove_common=True, lemm=True
         )
         results = [res[0] for res in vector_search(tokens, binary_index, vector_index)]
+
+        end_time = time() - start_time
+        search_time.append(end_time*1000)
+
         results_for_query[query_id] = results
         results_at_k = results[:RANK_K]
         precision = get_precision(truth, results_at_k)
@@ -128,10 +135,11 @@ def evaluate(index_type, common_words, binary_index, vector_index, show=None, RA
         F1.append(F1_measure(recall, precision))
 
     print('Average F1 mesure (at rank {}): {:0.3f} (std deviation: {:0.2f})'.format(RANK_K, mean(F1), stdev(F1)))
+    print('Average search time: {:0.3f}ms (std deviation: {:0.2f})'.format(mean(search_time), stdev(search_time)))
 
     if CALC_MAP:
         map_ = MAP(queries, relevant_docs, results_for_query)
-        print('MAP: {:0.3f}'.format(map_))
+        print('Mean Average Precision: {:0.3f}'.format(map_))
 
     if show:
         from .measure import show_recall_precision

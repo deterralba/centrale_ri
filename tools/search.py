@@ -5,6 +5,8 @@ from collections import defaultdict
 import tools.token as tk
 import tools.cacm as cacm
 
+SHOW_N_FIRST = 10
+
 def search(index_type, all_docs_dict, common_words, binary_index, vector_index=None):
     print('Type your query (union is shown if several words are typed)')
     q = input('> ')
@@ -24,10 +26,13 @@ def search(index_type, all_docs_dict, common_words, binary_index, vector_index=N
             if res:
                 res = format_res(index_type, all_docs_dict, res)
                 print('{} documents found (type #id to see document details):'.format(len(res)))
-                print(*res, sep=', ')
+                if len(res) > SHOW_N_FIRST:
+                    print('Only the best {} results are shown'.format(SHOW_N_FIRST))
+                print(*res[:SHOW_N_FIRST], sep=', ')
             else:
                 print('No results were found')
-    print('Searching took {:.2f}ms.'.format((time.time() - start_time)*1000))
+    print('\nSearching took {:.2f}ms.'.format((time.time() - start_time)*1000))
+    print('+'*30, '\n')
 
 def reverse_search(all_docs_dict, common_words, q):
     try:

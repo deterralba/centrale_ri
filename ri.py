@@ -5,8 +5,8 @@ from collections import namedtuple, defaultdict
 import tools.search as se
 import tools.token as tk
 
-## Parameters
-#RANK_K = 5  # precision recall for the rank k
+## Parameter
+VECTOR_SEARCH = 'customtf' # 'customtf' or 'tfidf'
 
 
 ## Binary index
