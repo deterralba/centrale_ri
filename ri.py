@@ -28,8 +28,8 @@ def build_vector_index(all_docs_dict, common_words):
     return index
 
 def add_doc_to_vector_index(index_dict, doc, common_words):
-    for t, freq in collection.tokenize_doc_with_freq(doc, common_words):
-        index_dict[t] |= {(doc.id, freq)}
+    for t, card in collection.tokenize_doc_with_card(doc, common_words):
+        index_dict[t] |= {(doc.id, card)}
 
 
 if __name__ == '__main__':

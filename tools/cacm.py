@@ -96,12 +96,12 @@ def tokenize_doc(doc, common_words, remove_common, lemm):
     }
     return tokens
 
-def tokenize_doc_with_freq(doc, common_words):
+def tokenize_doc_with_card(doc, common_words):
     couples_dict = defaultdict(lambda: [0, 0])
     for field in doc[1:]:
-        tokens_and_freq = tk.filter_tokens_with_freq(tk.extract_tokens(field), common_words)
-        for t, freq in tokens_and_freq:
-            couples_dict[t] = [t, couples_dict[t][1] + freq]
+        tokens_and_card = tk.filter_tokens_with_card(tk.extract_tokens(field), common_words)
+        for t, card in tokens_and_card:
+            couples_dict[t] = [t, couples_dict[t][1] + card]
     couples = set(tuple(couple) for couple in couples_dict.values())
     return couples
 

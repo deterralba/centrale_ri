@@ -7,7 +7,8 @@ def extract_tokens(string):
         string = string.replace(sp, ' ')
     return string.split()
 
-def filter_tokens_with_freq(tokens, common_words):
+def filter_tokens_with_card(tokens, common_words):
+    ''' Returns {(token, cardinal of token in tokens), ...} '''
     words = [w.lower() for w in tokens]
     words = [w for w in words if len(w) > 1 and w not in common_words]
     global wnl

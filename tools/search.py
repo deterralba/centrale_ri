@@ -43,7 +43,7 @@ def reverse_search(all_docs_dict, common_words, q):
     except StopIteration:
         print('No doc with id ', id)
     except (IOError, ValueError):
-        print('! must be followed by a number')
+        print('# must be followed by a number')
 
 def binary_search(tokens, binary_index):
     docs_ids = [binary_index[t] for t in tokens]
@@ -78,8 +78,10 @@ def vector_search(tokens, binary_index, vector_index):
 
     list_of_couples_by_token = []
     for t in tokens:
-        couples_id_freq = filter_tuple_list_with_ids(vector_index[t], relevant_ids)
-        couples_id_weight = normalize_index_couples(couples_id_freq)
+        couples_id_card = filter_tuple_list_with_ids(vector_index[t], relevant_ids)
+        couples_id_card = vector_index[t]
+        print(couples_id_card)
+        couples_id_weight = normalize_index_couples(couples_id_card)
         list_of_couples_by_token.append(couples_id_weight)
 
     results = reduce_couples_by_token(list_of_couples_by_token)
