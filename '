@@ -28,7 +28,7 @@ def _parse_relevant_docs():
     with open('data/cacm/qrels.text') as f:
         for l in f:
             query_id, doc_id, _, _ = l.split()
-            relevant_docs[int(query_id)].append(int(doc_id))
+            relevant_docs[query_id].append(doc_id)
     return relevant_docs
 
 def parse_document():
@@ -107,38 +107,15 @@ def evaluate(index_type, common_words, binary_index, vector_index):
     relevant_docs = _parse_relevant_docs()
     queries = _parse_queries()
     from .search import vector_search
-    rec_pre = []
-    for query_id, truth in relevant_docs.items():
-        if len(truth) == 0:  # queries without relevant documents are filtered out
-            continue
-        else:
-            query = queries[query_id]
-            tokens = tk.filter_tokens(
-                tk.extract_tokens(query),
-                common_words, remove_common=True, lemm=True
-            )
-            results = [res[0] for res in vector_search(tokens, binary_index, vector_index)]
-            rec_pre.append(
-                (recall(truth, results), precision(truth, results))
-            )
-    rec_pre.sort(key=lambda x: x[0])  # sort (recall, precision) couples by recall
-    print(rec_pre)
-    show_recall_precision(rec_pre)
-
-def show_recall_precision(rec_pre):
-    from matplotlib import pyplot as plt
-    import numpy as np
-    recall = [x[0] for x in rec_pre]
-    precision = [x[1] for x in rec_pre]
-    decreasing_max_precision = np.maximum.accumulate(precision[::-1])[::-1]
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(recall, precision, '--b')
-    ax.step(recall, decreasing_max_precision, '-r')
-    fig.show()
-    input()
+    for query_id, query in queries.items():
+        tokens = tk.filter_tokens(tk.extract_tokens(query), common_words, remove_common=True, lemm=True)
+        print(query_id, tokens)
+        results = vector_search(tokens, binary_index, vector_index)
+        print(res)
+        for res in results:
 
 def precision(truth, results):
-    return 0 if len(results) == 0 else sum([1 for res in results if res in truth])/len(results)
+    return sum([res for res in results if res in truth])/len(results)
 
-def recall(truth, results):
-    return sum([1 for res in results if res in truth])/len(truth)
+
+

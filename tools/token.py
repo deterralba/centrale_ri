@@ -25,3 +25,14 @@ def filter_tokens(tokens, common_words, remove_common, lemm):
         words = [wnl.lemmatize(w) for w in words]
     return set(words)
 
+def get_all_tokens(docs, common_words, print_res=False):
+    tokens = [t for doc in docs for t in collection.tokenize_doc(doc, remove_common=False, lemm=True)]
+    print('Number of tokens (after lower/ ponctuation and basic duplicate removal): {}'.format(len(tokens)))
+    tokens = list(set(tokens))
+    print('Number of tokens (after removing duplicates): {}'.format(len(tokens)))
+    tokens = [t for t in tokens if t not in common_words]
+    print('Number of tokens (after removing {} common words): {}'.format(len(common_words), len(tokens)))
+    if print_res:
+        input('Type something to see the tokens')
+        print(tokens)
+    return tokens
