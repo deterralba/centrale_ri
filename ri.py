@@ -5,6 +5,9 @@ from collections import namedtuple, defaultdict
 import tools.search as se
 import tools.token as tk
 
+## Parameters
+RANK_K = 5  # precision recall for the rank k
+
 
 ## Binary index
 def build_binary_index(all_docs_dict, common_words):
@@ -34,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('source', choices=['cs276', 'cacm'])
     parser.add_argument('type', choices=['bin', 'vec'])
     parser.add_argument('--evaluate', help='test the results of the index (only for cacm)', action='store_true')
+    parser.add_argument('--plot', help='plot the recall precision curve - requires matplotlib and numpy', action='store_true')
     args = parser.parse_args()
 
     start_time = time.time()
@@ -63,11 +67,18 @@ if __name__ == '__main__':
         vector_index = build_vector_index(all_docs_dict, common_words)
     print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
 
-    if args.evaluate:  # evaluates the searches results for cacm
+    if args.evaluate or args.plot:  # evaluates the searches results for cacm
         if args.source != 'cacm' or args.type != 'vec':
             print('Evaluation is only possible with cacm and vector index, exiting')
         else:
-            collection.evaluate(args.type, common_words, binary_index, vector_index)
+            collection.evaluate(
+                args.type,
+                common_words,
+                binary_index,
+                vector_index,
+                args.plot,
+                RANK_K
+            )
     else:  # starts the search prompt
         try:
             while True:

@@ -6,6 +6,7 @@ Joseph-Marie Valleix - Février 2017
 ### Requirements:
 - Python (3.5)
 - nltk (3.2)
+- matplotlib et numpy pour les plot
 
 ### Données:
 Dans un dossier `data`, copier les données des collection cacm et cs276 tel que le contenu du dossier soit :

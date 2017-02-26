@@ -103,42 +103,35 @@ def tokenize_doc_with_freq(doc, common_words):
     couples = set(tuple(couple) for couple in couples_dict.values())
     return couples
 
-def evaluate(index_type, common_words, binary_index, vector_index):
-    relevant_docs = _parse_relevant_docs()
-    queries = _parse_queries()
+def evaluate(index_type, common_words, binary_index, vector_index, show=None, RANK_K=None):
+    from statistics import mean
     from .search import vector_search
+    from .measure import get_recall, get_precision, F1_measure, calc_mean_avg_precision_at_k
+    relevant_docs = _parse_relevant_docs()
+    results_for_query = {}
+    queries = _parse_queries()
     rec_pre = []
+    F1 = []
     for query_id, truth in relevant_docs.items():
-        if len(truth) == 0:  # queries without relevant documents are filtered out
-            continue
-        else:
-            query = queries[query_id]
-            tokens = tk.filter_tokens(
-                tk.extract_tokens(query),
-                common_words, remove_common=True, lemm=True
-            )
-            results = [res[0] for res in vector_search(tokens, binary_index, vector_index)]
-            rec_pre.append(
-                (recall(truth, results), precision(truth, results))
-            )
-    rec_pre.sort(key=lambda x: x[0])  # sort (recall, precision) couples by recall
-    print(rec_pre)
-    show_recall_precision(rec_pre)
+        query = queries[query_id]
+        tokens = tk.filter_tokens(
+            tk.extract_tokens(query),
+            common_words, remove_common=True, lemm=True
+        )
+        results = [res[0] for res in vector_search(tokens, binary_index, vector_index)]
+        results_for_query[query_id] = results
+        results_at_k = results[:RANK_K]
+        precision = get_precision(truth, results_at_k)
+        recall = get_recall(truth, results_at_k)
+        rec_pre.append((recall, precision))
+        F1.append(F1_measure(recall, precision))
 
-def show_recall_precision(rec_pre):
-    from matplotlib import pyplot as plt
-    import numpy as np
-    recall = [x[0] for x in rec_pre]
-    precision = [x[1] for x in rec_pre]
-    decreasing_max_precision = np.maximum.accumulate(precision[::-1])[::-1]
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(recall, precision, '--b')
-    ax.step(recall, decreasing_max_precision, '-r')
-    fig.show()
-    input()
+    print('Average F1 mesure (at rank {}): {:0.2f}'.format(RANK_K, mean(F1)))
 
-def precision(truth, results):
-    return 0 if len(results) == 0 else sum([1 for res in results if res in truth])/len(results)
+    print(queries, relevant_docs, results_for_query, RANK_K)
+    calc_mean_avg_precision_at_k(queries, relevant_docs, results_for_query, k=RANK_K)
 
-def recall(truth, results):
-    return sum([1 for res in results if res in truth])/len(truth)
+    if show:
+        from .measure import show_recall_precision
+        show_recall_precision(rec_pre, RANK_K)
+

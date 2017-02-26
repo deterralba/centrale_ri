@@ -6,7 +6,7 @@ import tools.token as tk
 import tools.cacm as cacm
 
 def search(index_type, all_docs_dict, common_words, binary_index, vector_index=None):
-    print('Type your query (intersection is shown if several words are typed)')
+    print('Type your query (union is shown if several words are typed)')
     q = input('> ')
     start_time = time.time()
     if q.startswith('#'):
@@ -42,7 +42,7 @@ def reverse_search(all_docs_dict, common_words, q):
 
 def binary_search(tokens, binary_index):
     docs_ids = [binary_index[t] for t in tokens]
-    relevant_ids = reduce(lambda x, y: x&y, docs_ids)
+    relevant_ids = reduce(lambda x, y: x|y, docs_ids)  # |: or    &: and
     return sorted(relevant_ids)
 
 def filter_tuple_list_with_ids(tuple_list, ids):
