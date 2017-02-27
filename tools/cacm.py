@@ -105,7 +105,7 @@ def tokenize_doc_with_card(doc, common_words):
     couples = set(tuple(couple) for couple in couples_dict.values())
     return couples
 
-def evaluate(index_type, common_words, binary_index, vector_index, show=None, RANK_K=None, CALC_MAP=None):
+def evaluate(index_type, common_words, vector_index, vector_docs_meta, show=None, RANK_K=None, CALC_MAP=None):
     from .search import vector_search
     from .measure import get_recall, get_precision, F1_measure, MAP
     from time import time
@@ -122,7 +122,7 @@ def evaluate(index_type, common_words, binary_index, vector_index, show=None, RA
             tk.extract_tokens(query),
             common_words, remove_common=True, lemm=True
         )
-        results = [res[0] for res in vector_search(tokens, binary_index, vector_index)]
+        results = [res[0] for res in vector_search(tokens, vector_index, vector_docs_meta)]
 
         end_time = time() - start_time
         search_time.append(end_time*1000)

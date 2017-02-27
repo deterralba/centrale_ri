@@ -5,9 +5,13 @@ from collections import defaultdict
 import tools.token as tk
 import tools.cacm as cacm
 
-SHOW_N_FIRST = 10
+## Parameter
+SHOW_N_FIRST = 10  # number of results to show in the command line prompt
 
-def search(index_type, all_docs_dict, common_words, binary_index, vector_index=None):
+#VECTOR_SEARCH = 'custom-tf' # first home made tfidf, see function custom_normalize
+VECTOR_SEARCH = 'tfidf'
+
+def search(index_type, all_docs_dict, common_words, binary_index=None, vector_index=None, vector_docs_meta=None):
     print('Type your query (union is shown if several words are typed)')
     q = input('> ')
     start_time = time.time()
@@ -22,7 +26,7 @@ def search(index_type, all_docs_dict, common_words, binary_index, vector_index=N
             if index_type == 'bin':
                 res = binary_search(tokens, binary_index)
             elif index_type == 'vec':
-                res = vector_search(tokens, binary_index, vector_index)
+                res = vector_search(tokens, vector_index, vector_docs_meta)
             if res:
                 res = format_res(index_type, all_docs_dict, res)
                 print('{} documents found (type #id to see document details):'.format(len(res)))
@@ -57,13 +61,40 @@ def filter_tuple_list_with_ids(tuple_list, ids):
 def reverse_order_dict_by_value(input_dict):
     return sorted(input_dict.items(), key=lambda x: x[1], reverse=True)
 
-def normalize_index_couples(index_items):
-    if not index_items:
+def custom_normalize(couples_id_card):
+    if not couples_id_card:
         return []
     couples = []
-    maxi = max(couple[1] for couple in index_items)
-    for couple in index_items:
-        couples.append((couple[0], math.log(1+couple[1]/maxi)))
+    card_max = max(card for id_, card in couples_id_card)
+    for id_, card in couples_id_card:
+        couples.append((id_, math.log(1 + card/card_max)))
+    return couples
+
+def normalize_term_in_document(couples_id_card, vector_docs_meta):
+    if not couples_id_card:
+        return []
+    couples = []
+
+    for id_, card in couples_id_card:
+        card_doc = vector_docs_meta[id_]  # number of terms in document
+
+        #couples.append((id_, math.log(1 + card/card_doc)))
+        #couples.append((id_, card/card_doc))
+        couples.append((id_, card))
+    return couples
+
+def normalize_term_in_collection(couples_id_card, nb_of_doc_in_collection):
+    if not couples_id_card:
+        return []
+    couples = []
+    nb_of_doc_with_token = len(couples_id_card)
+
+    idf = math.log(nb_of_doc_in_collection/nb_of_doc_with_token)
+    #idf = math.log(nb_of_doc_in_collection/(1 + nb_of_doc_with_token))
+    #idf = 1
+
+    for id_, card in couples_id_card:
+        couples.append((id_, card*idf))
     return couples
 
 def reduce_couples_by_token(couples_by_token):
@@ -73,16 +104,20 @@ def reduce_couples_by_token(couples_by_token):
             res_dict[doc_id] += weight
     return reverse_order_dict_by_value(res_dict)
 
-def vector_search(tokens, binary_index, vector_index):
-    relevant_ids = binary_search(tokens, binary_index)
-
+def vector_search(tokens, vector_index, vector_docs_meta):
+    nb_of_doc_in_collection = len(vector_docs_meta)
     list_of_couples_by_token = []
     for t in tokens:
-        couples_id_card = filter_tuple_list_with_ids(vector_index[t], relevant_ids)
+        #print('token', t)
         couples_id_card = vector_index[t]
-        print(couples_id_card)
-        couples_id_weight = normalize_index_couples(couples_id_card)
-        list_of_couples_by_token.append(couples_id_weight)
+        if VECTOR_SEARCH == 'tfidf':
+            couples_id_tf = normalize_term_in_document(couples_id_card, vector_docs_meta)
+            couples_id_tfidf = normalize_term_in_collection(couples_id_tf, nb_of_doc_in_collection)
+        elif VECTOR_SEARCH == 'custom-tf':
+            couples_id_tfidf = custom_normalize(couples_id_card)
+        else:
+            raise ValueError('Invalid VECTOR_SEARCH value {}'.format(VECTOR_SEARCH))
+        list_of_couples_by_token.append(couples_id_tfidf)
 
     results = reduce_couples_by_token(list_of_couples_by_token)
     return results
@@ -92,7 +127,7 @@ def get_doc_title(all_docs_dict, doc_id):
 
 def format_res(index_type, all_docs_dict, results):
     if index_type == 'bin':
-        res = ['\nId:{}: {}'.format(res[0], res[1], get_doc_title(all_docs_dict, res[0]))
+        res = ['\nId:{}: {}'.format(res, get_doc_title(all_docs_dict, res))
                for res in results]
         return res
     elif index_type == 'vec':

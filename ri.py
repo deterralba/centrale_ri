@@ -5,9 +5,6 @@ from collections import namedtuple, defaultdict
 import tools.search as se
 import tools.token as tk
 
-## Parameter
-VECTOR_SEARCH = 'customtf' # 'customtf' or 'tfidf'
-
 
 ## Binary index
 def build_binary_index(all_docs_dict, common_words):
@@ -23,13 +20,17 @@ def add_doc_to_binary_index(index_dict, doc, common_words):
 ## Vector index
 def build_vector_index(all_docs_dict, common_words):
     index = defaultdict(set)
+    docs_meta = dict()
     for doc in all_docs_dict.values():
-        add_doc_to_vector_index(index, doc, common_words)
-    return index
+        add_doc_to_vector_index(index, docs_meta, doc, common_words)
+    return index, docs_meta
 
-def add_doc_to_vector_index(index_dict, doc, common_words):
+def add_doc_to_vector_index(index_dict, docs_meta, doc, common_words):
+    nb_tokens = 0
     for t, card in collection.tokenize_doc_with_card(doc, common_words):
         index_dict[t] |= {(doc.id, card)}
+        nb_tokens += card
+    docs_meta[doc.id] = nb_tokens
 
 
 if __name__ == '__main__':
@@ -60,12 +61,15 @@ if __name__ == '__main__':
     print('Parsing common_words')
     common_words = collection.parse_common_words()
 
-    print('Building binary index')
-    binary_index = build_binary_index(all_docs_dict, common_words)
+    binary_index = None
     vector_index = None
+    vector_docs_meta = None  # dict doc.id -> nb of words of doc
     if args.type == 'vec':
         print('Building vector index')
-        vector_index = build_vector_index(all_docs_dict, common_words)
+        vector_index, vector_docs_meta = build_vector_index(all_docs_dict, common_words)
+    elif args.type == 'bin':
+        print('Building binary index')
+        binary_index = build_binary_index(all_docs_dict, common_words)
     print('Done! It took {:.2f}s to do everything.'.format(time.time() - start_time))
 
     if args.evaluate or args.plot:  # evaluates the searches results for cacm
@@ -77,8 +81,8 @@ if __name__ == '__main__':
                 collection.evaluate(
                     args.type,
                     common_words,
-                    binary_index,
                     vector_index,
+                    vector_docs_meta,
                     show=args.plot,
                     RANK_K=k,
                     CALC_MAP=(k==k_values[-1])
@@ -87,7 +91,7 @@ if __name__ == '__main__':
     else:  # starts the search prompt
         try:
             while True:
-                se.search(args.type, all_docs_dict, common_words, binary_index, vector_index)
+                se.search(args.type, all_docs_dict, common_words, binary_index, vector_index, vector_docs_meta)
         except (KeyboardInterrupt, EOFError):
             print('\nExiting')
 
