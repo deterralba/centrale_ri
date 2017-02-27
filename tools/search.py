@@ -79,8 +79,8 @@ def normalize_term_in_document(couples_id_card, vector_docs_meta):
         card_doc = vector_docs_meta[id_]  # number of terms in document
 
         #couples.append((id_, math.log(1 + card/card_doc)))
-        #couples.append((id_, card/card_doc))
-        couples.append((id_, card))
+        couples.append((id_, card/card_doc))
+        #couples.append((id_, card))
     return couples
 
 def normalize_term_in_collection(couples_id_card, nb_of_doc_in_collection):
@@ -89,8 +89,8 @@ def normalize_term_in_collection(couples_id_card, nb_of_doc_in_collection):
     couples = []
     nb_of_doc_with_token = len(couples_id_card)
 
-    idf = math.log(nb_of_doc_in_collection/nb_of_doc_with_token)
-    #idf = math.log(nb_of_doc_in_collection/(1 + nb_of_doc_with_token))
+    #idf = math.log(nb_of_doc_in_collection/nb_of_doc_with_token)
+    idf = math.log(nb_of_doc_in_collection/(1 + nb_of_doc_with_token))
     #idf = 1
 
     for id_, card in couples_id_card:

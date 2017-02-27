@@ -62,8 +62,8 @@ if __name__ == '__main__':
     common_words = collection.parse_common_words()
 
     # code to call get_all_tokens
-    from tools.token import get_all_tokens
-    get_all_tokens(all_docs_dict, common_words, collection)
+    #from tools.token import get_all_tokens
+    #get_all_tokens(all_docs_dict, common_words, collection)
 
     binary_index = None
     vector_index = None

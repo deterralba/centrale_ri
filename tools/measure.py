@@ -1,7 +1,7 @@
 from statistics import mean
 
-WRITE_TO_FILE = True
-tfdif_name = '1-log'
+WRITE_TO_FILE = False
+tfdif_name = 'f-1'
 
 def show_recall_precision(rec_pre, rank):
     from matplotlib import pyplot as plt
