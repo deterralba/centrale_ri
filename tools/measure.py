@@ -1,7 +1,7 @@
 from statistics import mean
 
-WRITE_TO_FILE = False
-tfdif_name = 'test'
+WRITE_TO_FILE = True
+tfdif_name = '1-log'
 
 def show_recall_precision(rec_pre, rank):
     from matplotlib import pyplot as plt
@@ -14,13 +14,14 @@ def show_recall_precision(rec_pre, rank):
     ax.set_title('Precision / Recall for the rank {}'.format(rank))
     ax.set_xlabel("recall")
     ax.set_ylabel("precision")
-    ax.set_xlim([0,1.1])
-    ax.set_ylim([0,1.1])
+    ax.set_xlim([0, 1.1])
+    ax.set_ylim([0, 1.1])
     ax.plot(recall, precision, '--g')
     ax.step(recall, decreasing_max_precision, '-b')
     fig.show()
     if WRITE_TO_FILE:
-        plt.savefig('image/tfdif-{}-rank-{}.png'.format(tfdif_name, rank))
+        plt.savefig('image/tfidf-{}-rank-{}.png'.format(tfdif_name, rank))
+        print('image/tfidf-{}-rank-{}.png'.format(tfdif_name, rank))
 
 def get_precision(truth, results):
     return 0 if len(results) == 0 else sum([1 for res in results if res in truth])/len(results)

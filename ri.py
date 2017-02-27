@@ -53,13 +53,17 @@ if __name__ == '__main__':
     if args.source == 'cacm':
         import tools.cacm as collection
     elif args.source == 'cs276':
-        import tools.cs as collection
         raise NotImplementedError('The implementation is not yet complete')
+        import tools.cs as collection
 
     print('Parsing {}'.format(args.source))
     all_docs_dict = collection.parse_document()
     print('Parsing common_words')
     common_words = collection.parse_common_words()
+
+    # code to call get_all_tokens
+    from tools.token import get_all_tokens
+    get_all_tokens(all_docs_dict, common_words, collection)
 
     binary_index = None
     vector_index = None
@@ -94,4 +98,5 @@ if __name__ == '__main__':
                 se.search(args.type, all_docs_dict, common_words, binary_index, vector_index, vector_docs_meta)
         except (KeyboardInterrupt, EOFError):
             print('\nExiting')
+
 

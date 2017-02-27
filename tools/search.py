@@ -51,7 +51,7 @@ def reverse_search(all_docs_dict, common_words, q):
 
 def binary_search(tokens, binary_index):
     docs_ids = [binary_index[t] for t in tokens]
-    relevant_ids = reduce(lambda x, y: x|y, docs_ids)  # |: or    &: and
+    relevant_ids = reduce(lambda x, y: x|y, docs_ids)  # |: union    &: intersection
     return sorted(relevant_ids)
 
 def filter_tuple_list_with_ids(tuple_list, ids):
